@@ -3,6 +3,9 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const bodyParser = require('body-parser');
+const nodemailer = require('nodemailer');
+const authRoutes = require('./routes/auth');
+const User = require('./models/User'); // modelo importado corretamente
 
 const app = express();
 const PORT = 3000;
@@ -10,8 +13,9 @@ const PORT = 3000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use('/api/admin/auth', authRoutes); // rotas externas
 
-// Conexão com o MongoDB
+// MongoDB
 mongoose.connect('mongodb://localhost:27017/admin', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -19,19 +23,16 @@ mongoose.connect('mongodb://localhost:27017/admin', {
 .then(() => console.log('🟢 Conectado ao MongoDB'))
 .catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
 
-// Schema e modelo de usuário
-const userSchema = new mongoose.Schema({
-  nome: String,
-  email: { type: String, unique: true },
-  whatsapp: String,
-  empresa: String,
-  cnpj: String,
-  senha: String,
+// Nodemailer
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'elissonvictorc@gmail.com',
+    pass: 'ursr vjns whqn itnc', // 🔒 Atenção: nunca compartilhe isso publicamente!
+  },
 });
 
-const User = mongoose.model('User', userSchema);
-
-// Rota de registro
+// Registro
 app.post('/api/admin/auth/register', async (req, res) => {
   try {
     const { nome, email, whatsapp, empresa, cnpj, senha } = req.body;
@@ -61,7 +62,7 @@ app.post('/api/admin/auth/register', async (req, res) => {
   }
 });
 
-// Rota de login
+// Login
 app.post('/api/admin/auth/login', async (req, res) => {
   try {
     const { email, senha } = req.body;
@@ -83,7 +84,39 @@ app.post('/api/admin/auth/login', async (req, res) => {
   }
 });
 
-// Inicia o servidor
+// Recuperação de senha
+app.post('/api/admin/auth/reset-password', async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'Usuário não encontrado' });
+    }
+
+    await transporter.sendMail({
+      from: '"Vigia System" <elissonvictorc@gmail.com>',
+      to: email,
+      subject: 'Recuperação de Senha',
+      html: `
+        <h2>Recuperação de Senha</h2>
+        <p>Olá, ${user.nome},</p>
+        <p>Clique no botão abaixo para redefinir sua senha:</p>
+        <a href="http://localhost:5173/reset-password?email=${encodeURIComponent(email)}" style="display: inline-block; padding: 10px 20px; background-color: #2e7d32; color: white; text-decoration: none; border-radius: 4px;">
+          Redefinir Senha
+        </a>
+        <p>Se você não solicitou isso, ignore este e-mail.</p>
+      `,
+    });
+
+    return res.status(200).json({ message: 'E-mail enviado com sucesso' });
+  } catch (err) {
+    console.error('Erro ao enviar e-mail:', err);
+    return res.status(500).json({ message: 'Erro ao enviar e-mail' });
+  }
+});
+
+// Iniciar servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });

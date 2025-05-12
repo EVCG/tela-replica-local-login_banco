@@ -1,11 +1,9 @@
-
+import axios from 'axios';
 import { toast } from 'sonner';
 import { User } from './localDatabase';
 
-// URL base da API
 const API_BASE_URL = 'http://localhost:3000/api/admin';
 
-// Tipos para login e registro
 export interface LoginData {
   email: string;
   senha: string;
@@ -20,9 +18,7 @@ export interface RegisterData {
   senha: string;
 }
 
-// Classe para gerenciar chamadas à API
 export class ApiService {
-  // Registrar um novo usuário
   static async registerUser(userData: RegisterData): Promise<User | null> {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
@@ -41,8 +37,6 @@ export class ApiService {
 
       const data = await response.json();
       toast.success('Cadastro realizado com sucesso!');
-      
-      // Salva o usuário no localStorage para manter sessão
       localStorage.setItem('currentUser', JSON.stringify(data.user));
       return data.user;
     } catch (error) {
@@ -52,7 +46,11 @@ export class ApiService {
     }
   }
 
-  // Autenticar usuário
+ static async requestPasswordReset(email: string) {
+  return await axios.post('http://localhost:3000/api/admin/auth/reset-password', { email });
+}
+
+
   static async loginUser(credentials: LoginData): Promise<User | null> {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -71,8 +69,6 @@ export class ApiService {
 
       const data = await response.json();
       toast.success('Login realizado com sucesso!');
-      
-      // Salva o usuário no localStorage para manter sessão
       localStorage.setItem('currentUser', JSON.stringify(data.user));
       return data.user;
     } catch (error) {
@@ -82,7 +78,6 @@ export class ApiService {
     }
   }
 
-  // Obter usuário atual (do localStorage)
   static async getCurrentUser(): Promise<User | null> {
     try {
       const userJson = localStorage.getItem('currentUser');
@@ -94,7 +89,6 @@ export class ApiService {
     }
   }
 
-  // Logout de usuário
   static async logout(): Promise<void> {
     localStorage.removeItem('currentUser');
   }

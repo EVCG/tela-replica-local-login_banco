@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiService } from '@/services/apiService';
 import { Eye, EyeOff } from 'lucide-react';
+import ResetPasswordModal from './ResetPasswordModal';
+
 
 const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -10,14 +12,16 @@ const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [showResetModal, setShowResetModal] = useState(false);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !senha) {
       return;
     }
-    
+
     setLoading(true);
     try {
       const user = await ApiService.loginUser({ email, senha });
@@ -56,9 +60,16 @@ const LoginForm: React.FC = () => {
           <label htmlFor="senha" className="block text-sm font-medium text-gray-700">
             Senha
           </label>
-          <a href="#" className="text-sm text-vigia-link hover:underline">
+          <a
+            href="#"
+            className="text-sm text-vigia-link hover:underline"
+            onClick={() => setShowResetModal(true)}
+          >
             Esqueceu sua senha?
+            {showResetModal && <ResetPasswordModal onClose={() => setShowResetModal(false)} />}
+
           </a>
+
         </div>
         <div className="relative">
           <input
